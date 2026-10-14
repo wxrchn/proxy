@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 深度融合优化脚本
- * https://raw.githubusercontent.com/wxrchn/proxy/refs/heads/main/wscript.js
+ * https://raw.githubusercontent.com/wxrchn/proxy/refs/heads/main/clash.js
  */
 
 // --- 1. 静态基础参数 ---
