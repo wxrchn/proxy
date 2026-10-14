@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 深度融合优化脚本
- * 映射自 Shadowrocket 高阶精炼配置架构
+ * 
  */
 
 // --- 1. 静态基础参数 ---
