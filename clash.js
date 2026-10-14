@@ -39,7 +39,7 @@ const _skipDomains = [
   '*.163.com',
 ]
 
-// 6 大核心国家地区正则定义（名称与规则严格对应）
+// 6 大核心国家地区正则定义
 const mainRegions = [
   {
     name: '香港',
@@ -185,7 +185,7 @@ function main(config) {
   const proxies = config?.proxies || []
   if (proxies.length === 0 && !config['proxy-providers']) return config
 
-  // Reality 节点 mlkem768 兼容补丁
+  // Reality 节点兼容补丁
   const MLKEM_KEY = 'support-x25519mlkem768'
   proxies.forEach((p) => {
     if (p && p.type === 'vless') {
@@ -206,7 +206,7 @@ function main(config) {
   config['find-process-mode'] = 'strict'
   config['profile'] = { 'store-selected': true, 'store-fake-ip': true }
 
-  // DNS 防泄漏配置
+  // DNS 覆写（吸收优点：注入苹果系统原生直析 policy）
   config['dns'] = {
     enable: true,
     listen: ':1053',
@@ -233,6 +233,10 @@ function main(config) {
       'https://dns.alidns.com/dns-query',
       'https://doh.pub/dns-query',
     ],
+    'nameserver-policy': {
+      '+.apple.com': 'system',
+      '+.icloud.com': 'system',
+    },
   }
 
   // TUN 模式与排除路由
@@ -269,12 +273,11 @@ function main(config) {
     'skip-domain': _skipDomains,
   }
 
-  // --- 节点分类安全提取逻辑 ---
+  // --- 节点分类逻辑 ---
   const regionProxies = {}
   mainRegions.forEach((r) => (regionProxies[r.name] = []))
   const otherProxies = []
 
-  // 过滤纯广告/公告类文本行
   const dropRegex = /^(?=.*(套餐|到期|时间|官网|通知|发布|群|联系|工单|说明|防止|维护)).*$/i
 
   proxies.forEach((p) => {
@@ -296,7 +299,7 @@ function main(config) {
     }
   })
 
-  // 生成 6 大主要国家组（保证无论如何都有这个策略组存在，防止 rules 报错）
+  // 生成 6 大主要国家组
   const generatedRegionGroups = []
   mainRegions.forEach((r) => {
     const hasNodes = regionProxies[r.name].length > 0
@@ -323,13 +326,6 @@ function main(config) {
   const functionalGroups = [
     {
       ...groupBaseOption,
-      name: '默认',
-      type: 'select',
-      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
-    },
-    { 
-      ...groupBaseOption,
       name: 'AI',
       type: 'select',
       proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'],
@@ -348,7 +344,14 @@ function main(config) {
       type: 'select',
       proxies: ['香港', '台湾', '新加坡', '美国', '韩国', '日本', '其他', 'DIRECT'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
-    },  
+    },
+    {
+      ...groupBaseOption,
+      name: '默认',
+      type: 'select',
+      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
+    },
     {
       ...groupBaseOption,
       name: '兜底',
@@ -360,7 +363,7 @@ function main(config) {
 
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
 
-  // 分流规则（名称严格匹配 proxy-groups）
+  // 分流规则（吸收优点：在兜底前阻断代理流量的 QUIC）
   config['rules'] = [
     'DOMAIN-SUFFIX,ultramobile.com,DIRECT',
     'DOMAIN-SUFFIX,ultra.me,DIRECT',
@@ -391,6 +394,9 @@ function main(config) {
     'RULE-SET,lan,DIRECT',
     'RULE-SET,cn,DIRECT',
     'GEOIP,CN,DIRECT,no-resolve',
+
+    // 吸收优点：封锁未命中代理流量中的 QUIC，强制回退至 HTTP/2
+    'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT',
 
     'MATCH,兜底',
   ]
