@@ -39,7 +39,7 @@ const _skipDomains = [
   '*.163.com',
 ]
 
-// 6 大核心国家地区正则
+// 6 大核心国家地区正则定义（名称与规则严格对应）
 const mainRegions = [
   {
     name: '香港',
@@ -269,20 +269,17 @@ function main(config) {
     'skip-domain': _skipDomains,
   }
 
-  // --- 节点分类安全提取逻辑（彻底排查漏节点）---
+  // --- 节点分类安全提取逻辑 ---
   const regionProxies = {}
   mainRegions.forEach((r) => (regionProxies[r.name] = []))
   const otherProxies = []
 
-  // 仅过滤开头的纯广告/信息通知行，避免误伤正规节点
-  const dropRegex = /^(?=.*(套餐|流量|到期|时间|官网|通知|发布|群|联系|工单|提示|说明|备用|失联|防止)).*$/i
+  // 过滤纯广告/公告类文本行
+  const dropRegex = /^(?=.*(套餐|到期|时间|官网|通知|发布|群|联系|工单|说明|防止|维护)).*$/i
 
   proxies.forEach((p) => {
-    // 兼容对象和字符串两种数据类型
     const nodeName = typeof p === 'string' ? p : p?.name
     if (!nodeName) return
-
-    // 剔除纯公告行
     if (dropRegex.test(nodeName)) return
 
     let matched = false
@@ -294,28 +291,26 @@ function main(config) {
       }
     }
 
-    // 只要不是 6 大主流国家，其余节点（英国、德国、土耳其、阿根廷、法国等）100% 收录进其他
     if (!matched) {
       otherProxies.push(nodeName)
     }
   })
 
-  // 动态生成 6 大主要国家组
+  // 生成 6 大主要国家组（保证无论如何都有这个策略组存在，防止 rules 报错）
   const generatedRegionGroups = []
   mainRegions.forEach((r) => {
-    if (regionProxies[r.name].length > 0) {
-      generatedRegionGroups.push({
-        ...groupBaseOption,
-        name: r.name,
-        type: 'url-test',
-        tolerance: 50,
-        icon: r.icon,
-        proxies: regionProxies[r.name],
-      })
-    }
+    const hasNodes = regionProxies[r.name].length > 0
+    generatedRegionGroups.push({
+      ...groupBaseOption,
+      name: r.name,
+      type: regionProxies[r.name].length > 1 ? 'url-test' : 'select',
+      tolerance: 50,
+      icon: r.icon,
+      proxies: hasNodes ? regionProxies[r.name] : ['DIRECT'],
+    })
   })
 
-  // 【关键修复】：强制生成“其他”策略组，有节点放节点，无节点防死锁放 DIRECT
+  // 生成“其他”策略组
   generatedRegionGroups.push({
     ...groupBaseOption,
     name: '其他',
@@ -324,82 +319,48 @@ function main(config) {
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
   })
 
-  // 收集有效地区名称
-  const activeRegionNames = generatedRegionGroups.map((g) => g.name)
-
-  // 构建业务策略组
+  // 核心功能策略组
   const functionalGroups = [
     {
       ...groupBaseOption,
+      name: '默认',
+      type: 'select',
+      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
+    },
+    { 
+      ...groupBaseOption,
       name: 'AI',
       type: 'select',
-      proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'].filter(
-        (n) => activeRegionNames.includes(n)
-      ),
+      proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
     },
     {
       ...groupBaseOption,
       name: 'TIKTOK',
       type: 'select',
-      proxies: ['新加坡', '美国', '台湾', '韩国', '日本', '香港', '其他'].filter(
-        (n) => activeRegionNames.includes(n)
-      ),
+      proxies: ['新加坡', '美国', '台湾', '韩国', '日本', '香港', '其他'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
     },
     {
       ...groupBaseOption,
       name: '流媒体',
       type: 'select',
-      proxies: [
-        '香港',
-        '台湾',
-        '新加坡',
-        '美国',
-        '韩国',
-        '日本',
-        '其他',
-        'DIRECT',
-      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
+      proxies: ['香港', '台湾', '新加坡', '美国', '韩国', '日本', '其他', 'DIRECT'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
-    },
-    {
-      ...groupBaseOption,
-      name: '默认',
-      type: 'select',
-      proxies: [
-        '香港',
-        '台湾',
-        '新加坡',
-        '韩国',
-        '日本',
-        '美国',
-        '其他',
-        'DIRECT',
-      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
-    },
+    },  
     {
       ...groupBaseOption,
       name: '兜底',
       type: 'fallback',
-      proxies: [
-        '香港',
-        '台湾',
-        '新加坡',
-        '韩国',
-        '日本',
-        '美国',
-        '其他',
-        'DIRECT',
-      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
+      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Round_Robin.png',
     },
   ]
 
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
 
-  // 分流规则
+  // 分流规则（名称严格匹配 proxy-groups）
   config['rules'] = [
     'DOMAIN-SUFFIX,ultramobile.com,DIRECT',
     'DOMAIN-SUFFIX,ultra.me,DIRECT',
