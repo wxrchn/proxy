@@ -25,7 +25,6 @@ const _skipIps = [
   '::1/128',
 ]
 
-// 跳过代理的本地与金融敏感域名（对齐小火箭 skip-proxy）
 const _skipDomains = [
   '*.local',
   'captive.apple.com',
@@ -40,7 +39,7 @@ const _skipDomains = [
   '*.163.com',
 ]
 
-// 6 大核心国家地区正则定义（使用与小火箭相同的黑白名单正则过滤）
+// 6 大核心国家地区正则
 const mainRegions = [
   {
     name: '香港',
@@ -74,7 +73,6 @@ const mainRegions = [
   },
 ]
 
-// 策略组通用参数
 const groupBaseOption = {
   interval: 600,
   timeout: 5000,
@@ -83,7 +81,6 @@ const groupBaseOption = {
   'max-failed-times': 3,
 }
 
-// 预定义 .mrs 二进制规则源（MetaCubeX 官方）
 const ruleProviders = {
   adblock: {
     type: 'http',
@@ -188,16 +185,17 @@ function main(config) {
   const proxies = config?.proxies || []
   if (proxies.length === 0 && !config['proxy-providers']) return config
 
-  // 2.0 Reality 节点补丁：兼容 Xray 26.9.9+ 的 mlkem768 协商
+  // Reality 节点 mlkem768 兼容补丁
   const MLKEM_KEY = 'support-x25519mlkem768'
   proxies.forEach((p) => {
-    if (p.type !== 'vless') return
-    if (p['reality-opts']) p['reality-opts'][MLKEM_KEY] = true
-    const ds = p['xhttp-opts']?.['download-settings']
-    if (ds?.['reality-opts']) ds['reality-opts'][MLKEM_KEY] = true
+    if (p && p.type === 'vless') {
+      if (p['reality-opts']) p['reality-opts'][MLKEM_KEY] = true
+      const ds = p['xhttp-opts']?.['download-settings']
+      if (ds?.['reality-opts']) ds['reality-opts'][MLKEM_KEY] = true
+    }
   })
 
-  // 2.1 覆盖全局网络层基础配置
+  // 网络层基础配置
   config['mode'] = 'rule'
   config['ipv6'] = true
   config['allow-lan'] = true
@@ -208,7 +206,7 @@ function main(config) {
   config['find-process-mode'] = 'strict'
   config['profile'] = { 'store-selected': true, 'store-fake-ip': true }
 
-  // 2.2 DNS 防泄漏与快速解析（对齐小火箭高可用双栈）
+  // DNS 防泄漏配置
   config['dns'] = {
     enable: true,
     listen: ':1053',
@@ -237,7 +235,7 @@ function main(config) {
     ],
   }
 
-  // 2.3 TUN 模式与旁路排除（完整补全 IPv6 局域段）
+  // TUN 模式与排除路由
   config['tun'] = {
     enable: true,
     stack: 'mixed',
@@ -256,7 +254,7 @@ function main(config) {
     ],
   }
 
-  // 2.4 域名嗅探与网银/诊断域名跳过
+  // 域名嗅探
   config['sniffer'] = {
     enable: true,
     'force-dns-mapping': true,
@@ -271,30 +269,38 @@ function main(config) {
     'skip-domain': _skipDomains,
   }
 
-  // 2.5 节点分类分拣逻辑
+  // --- 节点分类安全提取逻辑（彻底排查漏节点）---
   const regionProxies = {}
   mainRegions.forEach((r) => (regionProxies[r.name] = []))
   const otherProxies = []
 
-  // 过滤废弃公告节点
-  const dropRegex = /(回国|校园|游戏|🎮|GAME|群|官网|网站|网址|订阅|流量|到期|剩余|已用|发布|工单|通知|备用|失联|版本)/i
+  // 仅过滤开头的纯广告/信息通知行，避免误伤正规节点
+  const dropRegex = /^(?=.*(套餐|流量|到期|时间|官网|通知|发布|群|联系|工单|提示|说明|备用|失联|防止)).*$/i
 
   proxies.forEach((p) => {
+    // 兼容对象和字符串两种数据类型
+    const nodeName = typeof p === 'string' ? p : p?.name
+    if (!nodeName) return
+
+    // 剔除纯公告行
+    if (dropRegex.test(nodeName)) return
+
     let matched = false
     for (const r of mainRegions) {
-      if (r.regex.test(p.name)) {
-        regionProxies[r.name].push(p.name)
+      if (r.regex.test(nodeName)) {
+        regionProxies[r.name].push(nodeName)
         matched = true
         break
       }
     }
-    // 未匹配进 6 大主要地区、且不是机场公告废弃行，自动落入“其他”
-    if (!matched && !dropRegex.test(p.name)) {
-      otherProxies.push(p.name)
+
+    // 只要不是 6 大主流国家，其余节点（英国、德国、土耳其、阿根廷、法国等）100% 收录进其他
+    if (!matched) {
+      otherProxies.push(nodeName)
     }
   })
 
-  // 生成 6 大地区的 url-test 测速组
+  // 动态生成 6 大主要国家组
   const generatedRegionGroups = []
   mainRegions.forEach((r) => {
     if (regionProxies[r.name].length > 0) {
@@ -309,64 +315,92 @@ function main(config) {
     }
   })
 
-  // 生成“其他”策略组（容纳所有冷门/小众国家节点）
-  if (otherProxies.length > 0) {
-    generatedRegionGroups.push({
-      ...groupBaseOption,
-      name: '其他',
-      type: 'select',
-      proxies: otherProxies,
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
-    })
-  }
+  // 【关键修复】：强制生成“其他”策略组，有节点放节点，无节点防死锁放 DIRECT
+  generatedRegionGroups.push({
+    ...groupBaseOption,
+    name: '其他',
+    type: 'select',
+    proxies: otherProxies.length > 0 ? otherProxies : ['DIRECT'],
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
+  })
 
-  // 2.6 构建功能策略组（顺序与命名同小火箭一致）
+  // 收集有效地区名称
+  const activeRegionNames = generatedRegionGroups.map((g) => g.name)
+
+  // 构建业务策略组
   const functionalGroups = [
-    // 1. 自定义特定业务组
     {
       ...groupBaseOption,
       name: 'AI',
       type: 'select',
-      proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'],
+      proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'].filter(
+        (n) => activeRegionNames.includes(n)
+      ),
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
     },
     {
       ...groupBaseOption,
       name: 'TIKTOK',
       type: 'select',
-      proxies: ['新加坡', '美国', '台湾', '韩国', '日本', '香港', '其他'],
+      proxies: ['新加坡', '美国', '台湾', '韩国', '日本', '香港', '其他'].filter(
+        (n) => activeRegionNames.includes(n)
+      ),
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
     },
     {
       ...groupBaseOption,
       name: '流媒体',
       type: 'select',
-      proxies: ['香港', '台湾', '新加坡', '美国', '韩国', '日本', '其他', 'DIRECT'],
+      proxies: [
+        '香港',
+        '台湾',
+        '新加坡',
+        '美国',
+        '韩国',
+        '日本',
+        '其他',
+        'DIRECT',
+      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
     },
-    // 2. 大一统海外代理与兜底
     {
       ...groupBaseOption,
       name: '默认',
       type: 'select',
-      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
+      proxies: [
+        '香港',
+        '台湾',
+        '新加坡',
+        '韩国',
+        '日本',
+        '美国',
+        '其他',
+        'DIRECT',
+      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
     },
     {
       ...groupBaseOption,
       name: '兜底',
       type: 'fallback',
-      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
+      proxies: [
+        '香港',
+        '台湾',
+        '新加坡',
+        '韩国',
+        '日本',
+        '美国',
+        '其他',
+        'DIRECT',
+      ].filter((n) => n === 'DIRECT' || activeRegionNames.includes(n)),
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Round_Robin.png',
     },
   ]
 
-  // 2.7 装载完整策略组
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
 
-  // 2.8 分流规则（1:1 映射小火箭 [Rule]）
+  // 分流规则
   config['rules'] = [
-    // 银行与特定金融直连
     'DOMAIN-SUFFIX,ultramobile.com,DIRECT',
     'DOMAIN-SUFFIX,ultra.me,DIRECT',
     'DOMAIN-SUFFIX,za.group,DIRECT',
@@ -374,36 +408,29 @@ function main(config) {
     'DOMAIN-SUFFIX,capitalone.com,DIRECT',
     'DOMAIN-SUFFIX,bochk.com,DIRECT',
 
-    // 限制美国 IP 访问的特定业务
     'DOMAIN-SUFFIX,paze.com,美国',
     'DOMAIN-SUFFIX,fidelity.com,美国',
     'DOMAIN-SUFFIX,creditkarma.com,美国',
     'DOMAIN-SUFFIX,muse.ai,美国',
 
-    // 广告过滤
     'RULE-SET,adblock,REJECT',
 
-    // 业务手选组
     'RULE-SET,ai,AI',
     'RULE-SET,tiktok,TIKTOK',
 
-    // 大一统国际流媒体
     'RULE-SET,netflix,流媒体',
     'RULE-SET,disney,流媒体',
     'RULE-SET,hbo,流媒体',
     'RULE-SET,primevideo,流媒体',
     'RULE-SET,hulu,流媒体',
 
-    // 苹果与微软服务（直连跑满宽带）
     'RULE-SET,apple,DIRECT',
     'RULE-SET,microsoft,DIRECT',
 
-    // 局域网与国内直连
     'RULE-SET,lan,DIRECT',
     'RULE-SET,cn,DIRECT',
     'GEOIP,CN,DIRECT,no-resolve',
 
-    // 终极兜底（小火箭的 FINAL,兜底）
     'MATCH,兜底',
   ]
 
