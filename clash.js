@@ -388,6 +388,9 @@ function main(config) {
     'RULE-SET,primevideo,流媒体',
     'RULE-SET,hulu,流媒体',
 
+    'DOMAIN,apple-relay.cloudflare.com,美国',
+    'DOMAIN,apple-relay.fastly-edge.com,美国',
+    'DOMAIN,gspe1-ssl.ls.apple.com,美国',
     'RULE-SET,apple,DIRECT',
     'RULE-SET,microsoft,DIRECT',
 
