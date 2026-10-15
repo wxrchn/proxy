@@ -1,5 +1,5 @@
 /***
- * Clash Verge Rev / Mihomo Party 深度融合优化脚本
+ * Clash Verge Rev / Mihomo Party 脚本
  * https://raw.githubusercontent.com/wxrchn/proxy/refs/heads/main/clash.js
  */
 
@@ -104,6 +104,14 @@ const ruleProviders = {
     format: 'mrs',
     url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs',
     path: './rules/tiktok.mrs',
+    interval: 86400,
+  },
+  github: {
+    type: 'http',
+    behavior: 'domain',
+    format: 'mrs',
+    url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
+    path: './rules/github.mrs',
     interval: 86400,
   },
   netflix: {
@@ -381,6 +389,7 @@ function main(config) {
 
     'RULE-SET,ai,AI',
     'RULE-SET,tiktok,TIKTOK',
+    'RULE-SET,github,默认',
 
     'RULE-SET,netflix,流媒体',
     'RULE-SET,disney,流媒体',
