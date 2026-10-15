@@ -326,6 +326,13 @@ function main(config) {
   const functionalGroups = [
     {
       ...groupBaseOption,
+      name: '默认',
+      type: 'select',
+      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
+    },
+    {
+      ...groupBaseOption,
       name: 'AI',
       type: 'select',
       proxies: ['台湾', '新加坡', '美国', '香港', '韩国', '日本', '其他'],
@@ -344,13 +351,6 @@ function main(config) {
       type: 'select',
       proxies: ['香港', '台湾', '新加坡', '美国', '韩国', '日本', '其他', 'DIRECT'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
-    },
-    {
-      ...groupBaseOption,
-      name: '默认',
-      type: 'select',
-      proxies: ['香港', '台湾', '新加坡', '韩国', '日本', '美国', '其他', 'DIRECT'],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
     },
     {
       ...groupBaseOption,
