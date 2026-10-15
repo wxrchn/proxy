@@ -144,6 +144,11 @@ proxy-providers:
 
 # ----------------- 5. 策略组结构（修正 timeout: 5000 毫秒） -----------------
 proxy-groups:
+  - name: 默认
+    type: select
+    proxies: [香港, 台湾, 新加坡, 韩国, 日本, 美国, 其他, DIRECT]
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png
+  
   - name: AI
     type: select
     proxies: [台湾, 新加坡, 美国, 香港, 韩国, 日本, 其他]
@@ -158,11 +163,6 @@ proxy-groups:
     type: select
     proxies: [香港, 台湾, 新加坡, 美国, 韩国, 日本, 其他, DIRECT]
     icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png
-
-  - name: 默认
-    type: select
-    proxies: [香港, 台湾, 新加坡, 韩国, 日本, 美国, 其他, DIRECT]
-    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png
 
   - name: 兜底
     type: fallback
@@ -261,6 +261,13 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs"
     path: ./rules/tiktok.mrs
     interval: 86400
+  github:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs"
+    path: ./rules/github.mrs
+    interval: 86400
   netflix:
     type: http
     behavior: domain
@@ -354,6 +361,7 @@ rules:
   # 业务手选组 (AI / TikTok / 流媒体)
   - RULE-SET,ai,AI
   - RULE-SET,tiktok,TIKTOK
+  - RULE-SET,github,默认
   - RULE-SET,netflix,流媒体
   - RULE-SET,netflix-ip,流媒体,no-resolve
   - RULE-SET,disney,流媒体
