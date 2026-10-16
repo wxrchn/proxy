@@ -106,14 +106,6 @@ const ruleProviders = {
     path: './rules/tiktok.mrs',
     interval: 86400,
   },
-  github: {
-    type: 'http',
-    behavior: 'domain',
-    format: 'mrs',
-    url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs',
-    path: './rules/github.mrs',
-    interval: 86400,
-  },
   netflix: {
     type: 'http',
     behavior: 'domain',
@@ -165,9 +157,9 @@ const ruleProviders = {
   microsoft: {
     type: 'http',
     behavior: 'domain',
-    format: 'mrs',
-    url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs',
-    path: './rules/microsoft.mrs',
+    format: 'text',
+    url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list',
+    path: './rules/microsoft.list',
     interval: 86400,
   },
   lan: {
@@ -389,8 +381,7 @@ function main(config) {
 
     'RULE-SET,ai,AI',
     'RULE-SET,tiktok,TIKTOK',
-    'RULE-SET,github,默认',
-
+    
     'RULE-SET,netflix,流媒体',
     'RULE-SET,disney,流媒体',
     'RULE-SET,hbo,流媒体',
