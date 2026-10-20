@@ -368,7 +368,7 @@ rules:
   # 局域网与国内直连
   - RULE-SET,lan,DIRECT
   - RULE-SET,cn,DIRECT
-  - GEOIP,CN,DIRECT,no-resolve
+  - GEOIP,CN,DIRECT
 
   # 吸收优势：封锁代理流量中的 QUIC，强制回退至 HTTP/2 防干扰
   - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT
