@@ -393,7 +393,7 @@ function main(config) {
 
     'RULE-SET,lan,DIRECT',
     'RULE-SET,cn,DIRECT',
-    'GEOIP,CN,DIRECT,no-resolve',
+    'GEOIP,CN,DIRECT',
 
     // 吸收优点：封锁未命中代理流量中的 QUIC，强制回退至 HTTP/2
     'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT',
