@@ -317,6 +317,13 @@ rule-providers:
     url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list"
     path: ./rules/microsoft.list
     interval: 86400
+  download: 
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/applications.list"
+    path: ./rules/applications.list
+    interval: 86400
   lan:
     type: http
     behavior: domain
@@ -350,6 +357,7 @@ rules:
 
   # 广告拦截
   - RULE-SET,adblock,REJECT
+  - RULE-SET,download,DIRECT
 
   # 业务手选组 (AI / TikTok / 流媒体)
   - RULE-SET,ai,AI
