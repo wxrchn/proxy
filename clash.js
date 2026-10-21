@@ -1,5 +1,5 @@
 /***
- * Clash Verge Rev / Mihomo Party 脚本
+ * Clash Verge Rev / Mihomo Party 深度融合优化脚本
  * https://raw.githubusercontent.com/wxrchn/proxy/refs/heads/main/clash.js
  */
 
@@ -160,6 +160,14 @@ const ruleProviders = {
     format: 'text',
     url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list',
     path: './rules/microsoft.list',
+    interval: 86400,
+  },
+  download: {
+    type: 'http',
+    behavior: 'classical',
+    format: 'text',
+    url: 'https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/applications.list',
+    path: './rules/applications.list',
     interval: 86400,
   },
   lan: {
@@ -378,6 +386,7 @@ function main(config) {
     'DOMAIN-SUFFIX,muse.ai,美国',
 
     'RULE-SET,adblock,REJECT',
+    'RULE-SET,download,DIRECT',
 
     'RULE-SET,ai,AI',
     'RULE-SET,tiktok,TIKTOK',
