@@ -256,6 +256,11 @@ function main(config) {
     'auto-detect-interface': true,
     'strict-route': true,
     'route-exclude-address': _skipIps,
+    'exclude-package': [
+      'Sync.exe',
+      'Resilio Sync.exe',
+      'Resilio Sync'
+    ],
     'dns-hijack': [
       '8.8.8.8:53',
       '8.8.4.4:53',
